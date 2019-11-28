@@ -1,0 +1,36 @@
+stave: each measure corresponds to a stave (aka staff)
+	x: x position
+	y: y position
+	width: width
+	clef: bass or trebel clef
+	timeSignature: time signature
+	keySignature: key signature
+	voices: list of voices in the stave
+		time: contains timing information for the voice
+			num_beats: number of beats for the voice
+			beat_value: value of the beats (eighth note, quarter note, etc.)
+			resolution: how many beats the voice lasts for. Default is a while measure
+		tickables: List of notes
+			note: a note in the measure
+				clef: which clef it's in
+				keys: natural keys on the piano that correspond to the note (e.g. g/5, c/4)
+				duration: value of the note (denominator, so 8 = eighth note)
+				accidentals: List of accidentals in the same order as the keys
+		beams: the beams for the notes in the voices.
+			direction: up or down
+			groups: where to group the stems (e.g. 1/2 for 4/4 groups eighth notes in groups of 4)
+		ties: the ties between notes in the voice
+			first_note: first note in the tie 
+            last_note: last note in the tie
+            first_indices: If the first 'note' is a chord, which note in the chord to tie
+            last_indices: if the second 'note' is a chord, which note in the chord to tie
+    volta: denotes the options for a repeated section
+    	type: beginning, middle, end, begining and ending
+    section: description of the section // Not working BUG
+    tempo: tempo at the current point
+    	name: Name of the tempo (allegro, grave, presto, etc.) (cannot define with duration and bpm) // BUG
+    	duration: beat denomination (1/2 = double whole note, 4 = quarter note, etc.)
+    	bpm: beats per minute
+    	dotted: whether the duration note is dotted or not
+
+
