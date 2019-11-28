@@ -5,11 +5,12 @@ stave: each measure corresponds to a stave (aka staff)
 	clef: bass or trebel clef
 	timeSignature: time signature
 	keySignature: key signature
+	time: contains timing information for the voice
+		num_beats: number of beats for the voice
+		beat_value: value of the beats (eighth note, quarter note, etc.)
+		resolution: how many beats the voice lasts for. Default is a while measure
 	voices: list of voices in the stave
-		time: contains timing information for the voice
-			num_beats: number of beats for the voice
-			beat_value: value of the beats (eighth note, quarter note, etc.)
-			resolution: how many beats the voice lasts for. Default is a while measure
+		mode: whether to fill the voice with the correct amount of notes or not
 		tickables: List of notes
 			note: a note in the measure
 				clef: which clef it's in
@@ -22,8 +23,8 @@ stave: each measure corresponds to a stave (aka staff)
 		ties: the ties between notes in the voice
 			first_note: first note in the tie 
             last_note: last note in the tie
-            first_indices: If the first 'note' is a chord, which note in the chord to tie
-            last_indices: if the second 'note' is a chord, which note in the chord to tie
+            first_indices: If the first 'note' is a chord, which note(s) in the chord to tie
+            last_indices: if the second 'note' is a chord, which note(s) in the chord to tie
     volta: denotes the options for a repeated section
     	type: beginning, middle, end, begining and ending
     section: description of the section // Not working BUG

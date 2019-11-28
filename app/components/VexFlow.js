@@ -7,13 +7,155 @@ export default class VexFlow extends Component {
     constructor(props) {
         super(props);
 
-        this.state = {
-            x: 0,
-            y: 0
-        };
-
-        this.staves = [];
+        this.setDefaultState();
     };
+
+    setDefaultState() {
+        this.state = {
+            staves: [
+                {
+                    x: 10,
+                    y: 40,
+                    width: 400,
+                    notePad: 60,
+                    clef: "bass",
+                    timeSignature: "4/4",
+                    keySignature: "C",
+                    joinVoices: true,
+                    time: {
+                        num_beats: 4,
+                        beat_value: 4,
+                        resolution: VF.RESOLUTION
+                    },
+                    time: {
+                        num_beats: 4,
+                        beat_value: 4,
+                        resolution: VF.RESOLUTION,
+                    },
+                    voices: [
+                        {
+                            mode: VF.Voice.Mode.STRICT,
+                            tickables: [
+                                {
+                                    clef: "bass",
+                                    keys: ["f/2"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["g/2"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["a/2"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["b/2"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["c/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["d/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["e/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["f/3"],
+                                    duration: "8"
+                                }
+                            ],
+                            beams:
+                            {
+                                direction: VF.Stem.UP,
+                                groups: [
+                                    {
+                                        numerator: 4,
+                                        denominator: 8
+                                    }
+                                ]
+                            },
+                            ties: []
+                        },
+                        {
+                            mode: VF.Voice.Mode.STRICT,
+                            tickables: [
+                                {
+                                    clef: "bass",
+                                    keys: ["a/2"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["b/2"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["c/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["d/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["e/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["f/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["g/3"],
+                                    duration: "8"
+                                },
+                                {
+                                    clef: "bass",
+                                    keys: ["a/3"],
+                                    duration: "8"
+                                }
+                            ],
+                            beams: {
+                                direction: VF.Stem.DOWN,
+                                groups: [
+                                    {
+                                        numerator: 4,
+                                        denominator: 8
+                                    }
+                                ]
+                            },
+                            ties: [
+                                {
+                                    first_note: 3,
+                                    last_note: 4,
+                                    first_indices: [0],
+                                    last_indices: [0]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
 
     draw() {
         console.log("Rerender");
@@ -30,140 +172,77 @@ export default class VexFlow extends Component {
             var context = renderer.getContext();
             VF.Renderer.lastContext = context;
         }
-        context.clear();
 
-        // Create a stave of width 400 at position 10, 40 on the canvas.
-        var stave = new VF.Stave(10, 40, 400);
+        var drawList = [];
+        this.staves = this.state.staves.map(stave => {
+            var vfStave = new VF.Stave(stave.x, stave.y, stave.width);
+            vfStave.addClef(stave.clef).addTimeSignature(stave.timeSignature).addKeySignature(stave.keySignature);
 
-        var stave2 = new VF.Stave(stave.x + stave.getWidth(), stave.y, stave.getWidth());
+            var numNotes = 0;
+            stave.voices.forEach(voice => {
+                if (voice.tickables.length > numNotes) {
+                    numNotes = voice.tickables.length;
+                }
+            });
 
-        // Add a clef and time signature.
-        stave.addClef("bass").addTimeSignature("4/4").addKeySignature("C#");
-
-        // var accidentals = ["bb","b","#","n","b","##"];
-        // var noteInfo = {
-        //     clef: "bass",
-        //     keys: ["g/2", "b/2", "c/3", "e/3", "g/3", "b/3"],
-        //     duration: "h"
-        // }
-
-        // var notes = [];
-
-        // var note = new VF.StaveNote(noteInfo);
-
-        // accidentals.forEach( (acc, ind) => {
-        //     note.addAccidental(ind, new VF.Accidental(acc));
-        // });
-
-        var notes = [
-            new VF.StaveNote({clef: "bass", keys: ["e#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["f#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["g#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["a#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["b#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["c#/3"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["d#/3"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["e#/3"], duration: "8" }),
-            // new VF.StaveNote({clef: "bass", keys: ["f#/3"], duration: "16" }),
-            // new VF.StaveNote({clef: "bass", keys: ["g#/3"], duration: "16" }),
-            // new VF.StaveNote({clef: "bass", keys: ["a#/3"], duration: "16" }),
-            // new VF.StaveNote({clef: "bass", keys: ["b#/3"], duration: "16" }),
-            // new VF.StaveNote({clef: "bass", keys: ["c#/4"], duration: "16" }),
-            // new VF.StaveNote({clef: "bass", keys: ["d#/4"], duration: "16" }),
-            // new VF.StaveNote({clef: "bass", keys: ["e#/4"], duration: "8" })
-        ]
-        
-        // notes.push(note);
-        // notes.push(new VF.StaveNote({clef: "bass", keys: ["c/4"], duration: "h" }));
-
-        var time = {
-            num_beats: 4,
-            beat_value: 4,
-            resolution: VF.RESOLUTION,
-        }
-        var voice = new VF.Voice(time).setMode(VF.Voice.Mode.STRICT);
-        voice.addTickables(notes);
-
-        var notes2 = [
-            new VF.StaveNote({clef: "bass", keys: ["c#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["d#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["e#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["f#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["g#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["a#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["b#/2"], duration: "8" }),
-            new VF.StaveNote({clef: "bass", keys: ["c#/3"], duration: "8" })
-        ]
-
-        var voice2 = new VF.Voice(time).setMode(VF.Voice.Mode.STRICT);
-        voice2.addTickables(notes2);
-
-        var ties = [
-            new VF.StaveTie({
-                first_note: notes2[3],
-                last_note: notes2[4],
-                first_indices: [0],
-                last_indices: [0]
-            })
-        ];
-
-        var formatter = new VF.Formatter();
-
-        var voices = [voice, voice2];
-
-        var numNotes = 0;
-        voices.forEach(voice => {
-            if (voice.getTickables().length > numNotes) {
-                numNotes = voice.getTickables().length;
-            }
-        });
-
-        var staves = [stave, stave2];
-        staves.forEach(stave => {
-            let width = numNotes * 60;
+            let width = numNotes * stave.notePad;
             if (width > stave.width) 
             {
-                stave.setWidth(numNotes * 60);
+                stave.width = numNotes * 60;
+                vfStave.setWidth(numNotes * 60);
             }
-        })
 
-        if (stave.x + (stave.getWidth() * 2) > 1500) {
-            stave2.setX(stave.x);
-            stave2.setY(stave.getBottomY());
-        } else {
-            stave2.setX(stave.x + stave.width);
-        }
+            var vfTickablesList = [];
+            var vfVoices = stave.voices.map(voice => {
+                var vfTickables = voice.tickables.map(note => {
+                    return new VF.StaveNote(note);
+                });
 
-        formatter.joinVoices(voices)
-            .formatToStave(voices, stave);
+                var vfVoice = new VF.Voice(stave.time).setMode(voice.mode);
+                vfVoice.addTickables(vfTickables);
+                vfVoice.setStave(vfStave);
 
-        var groups = [
-            new VF.Fraction(4, 8)
-        ];
+                if (vfTickables.length > numNotes) {
+                    numNotes = vfTickables.length;
+                }
 
+                vfTickablesList.push(vfTickables);
+                drawList.push(vfVoice);
 
-                
-        var beams = VF.Beam.applyAndGetBeams(voice, VF.Stem.UP, groups);
+                return vfVoice;
+            });
 
-        voice.setStave(stave).draw(context);
+            if (stave.joinVoices) {
+                new VF.Formatter().joinVoices(vfVoices)
+                    .formatToStave(vfVoices, vfStave);
+            }
 
-        var beams2 = VF.Beam.applyAndGetBeams(voice2, VF.Stem.DOWN, groups);
+            stave.voices.forEach( (voice, i) => {
+                let groups = voice.beams.groups.map(fraction => {
+                    return new VF.Fraction(fraction.numerator, fraction.denominator);
+                });
 
-        voice2.setStave(stave).draw(context);
+                var vfBeams = VF.Beam.applyAndGetBeams(vfVoices[i], voice.beams.direction, groups);
+                var vfTies = voice.ties.map(tie => {
+                    return new VF.StaveTie({
+                        first_note: vfTickablesList[i][tie.first_note],
+                        last_note: vfTickablesList[i][tie.last_note],
+                        first_indices: tie.first_indices,
+                        last_indices: tie.last_indices
+                    });
+                })
 
-        // Connect to the rendering context and draw!
-        stave.setContext(context);
-        stave.draw();
+                drawList.push.apply(drawList, vfBeams);
+                drawList.push.apply(drawList, vfTies);
+            })
 
-        stave2.setContext(context);
-        stave2.draw();
+            drawList.push(vfStave);
 
-        this.staves = staves;
+            return vfStave;
+        });
 
-        beams.forEach(beam => beam.setContext(context).draw());
-        beams2.forEach(beam => beam.setContext(context).draw());
-
-        ties.forEach(t => t.setContext(context).draw());
+        console.log(drawList);
+        drawList.forEach(drawable => drawable.setContext(context).draw());
 
         div.addEventListener("mousemove", this.getClickPosition.bind(this), false);
         this.needsRerender = false;
