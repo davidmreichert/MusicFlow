@@ -157,24 +157,9 @@ export default class VexFlow extends Component {
         }
     }
 
-    draw() {
-        console.log("Rerender");
-
-        const div = document.getElementById("vexflow");
-
-        var context = VF.Renderer.lastContext;
-        if (!context) {
-            var renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
-            
-            // Configure the rendering context.
-            renderer.resize(1500, 1500);
-
-            var context = renderer.getContext();
-            VF.Renderer.lastContext = context;
-        }
-
+    createDrawableObjects(modelInfo) {
         var drawList = [];
-        this.staves = this.state.staves.map(stave => {
+        this.staves = modelInfo.staves.map(stave => {
             var vfStave = new VF.Stave(stave.x, stave.y, stave.width);
             vfStave.addClef(stave.clef).addTimeSignature(stave.timeSignature).addKeySignature(stave.keySignature);
 
@@ -207,7 +192,6 @@ export default class VexFlow extends Component {
                 }
 
                 vfTickablesList.push(vfTickables);
-                drawList.push(vfVoice);
 
                 return vfVoice;
             });
@@ -236,13 +220,41 @@ export default class VexFlow extends Component {
                 drawList.push.apply(drawList, vfTies);
             })
 
-            drawList.push(vfStave);
+            drawList.push.apply(drawList, vfVoices);
 
             return vfStave;
         });
+        
+        drawList.push.apply(drawList, this.staves);
+
+        return drawList;
+    }
+
+    getContext() {
+        const div = document.getElementById("vexflow");
+
+        var context = VF.Renderer.lastContext;
+        if (!context) {
+            var renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
+            
+            // Configure the rendering context.
+            renderer.resize(1500, 1500);
+
+            var context = renderer.getContext();
+            VF.Renderer.lastContext = context;
+        }
+
+        return context; 
+    }
+
+    draw() {
+        console.log("Rerender");
+        var context = this.getContext();
+
+        var drawList = this.createDrawableObjects(this.state);
 
         console.log(drawList);
-        drawList.forEach(drawable => drawable.setContext(context).draw());
+        drawList.reverse().forEach(drawable => drawable.setContext(context).draw());
 
         div.addEventListener("mousemove", this.getClickPosition.bind(this), false);
         this.needsRerender = false;
