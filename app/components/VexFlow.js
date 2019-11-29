@@ -22,6 +22,7 @@ export default class VexFlow extends Component {
         if (modelInfo.staves && modelInfo.staves.length) {
             var drawList = [];
 
+            modelInfo.updateStaveWidths();
             this.staves = modelInfo.staves.map(stave => {
                 drawList.push.apply(drawList, stave.getDrawList());
                 return stave.getVFStave(true);
@@ -38,7 +39,7 @@ export default class VexFlow extends Component {
             var renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
             renderer.lastContext        
             // Configure the rendering context.
-            renderer.resize(1500, 1500);
+            renderer.resize(this.system.width, this.system.height);
 
             context = renderer.getContext();
             VF.Renderer.lastContext = context;
@@ -52,6 +53,7 @@ export default class VexFlow extends Component {
     draw() {
         if (this.system.needsRerender) {
             let addEventListeners = !this.div;
+            console.log(this.staves);
 
             this.update = true;
             this.div = this.div || document.getElementById("vexflow");
@@ -95,17 +97,27 @@ export default class VexFlow extends Component {
         var x = e.clientX - this.startX;
         var y = e.clientY - this.startY;
 
-        this.currentStave = this.system.getStave(x, y);
+        let staveInfo = this.system.getStave(x, y);
 
-        if (this.currentStave && y < this.currentStave.getBottomY() && y > this.currentStave.getYForLine(0)) {
-            this.currentStave.addNote(y);
-        } 
+        if (staveInfo) {
+            this.currentStave = staveInfo.stave;
+            this.currentStaveIndex = staveInfo.index;
+        }
+
+        // If current stave is pending and mouse is between the lines, add note
+        if ((this.currentStave && this.currentStave.pending) &&
+            (y < this.currentStave.getBottomY() && y > this.currentStave.getYForLine(0))) {
+                this.currentStave.addNote(y);
+        } else {
+            this.system.removePendingNotes();
+        }
             
         this.draw();
     }
 
     getClickPosition(e) {
-        if (this.update) {
+        if (this.update || 
+            (this.currentStave && !this.currentStave.pending)) {
             return;
         }
 
@@ -113,7 +125,14 @@ export default class VexFlow extends Component {
         this.lastClickTime = this.lastClickTime || 0;
 
         if (currentTime - this.lastClickTime > 100 && this.currentStave) {
-            this.currentStave.saveNote();
+            let voiceFull = this.currentStave.saveNote();
+            if (voiceFull) {
+                if (this.currentStaveIndex === this.system.staves.length - 1) {
+                    this.system.addStave();
+                }
+                
+                this.currentStave.saveNote(true);
+            }
 
             this.draw();
         }
