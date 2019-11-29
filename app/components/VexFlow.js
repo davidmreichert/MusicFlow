@@ -66,6 +66,7 @@ export default class VexFlow extends Component {
             if (addEventListeners) {
                 this.div.addEventListener("mousemove", this.getMousePosition.bind(this), false);
                 this.div.addEventListener("click", this.getClickPosition.bind(this), false);
+                document.addEventListener("keyup", this.shortcuts.bind(this), false);
             }
 
             this.system.needsRerender = false;
@@ -115,6 +116,21 @@ export default class VexFlow extends Component {
             this.currentStave.saveNote();
 
             this.draw();
+        }
+    }
+
+    shortcuts(e) {
+        // // ignore all keyup events that are part of composition
+        // if (event.isComposing || event.keyCode === 229) {
+        //     return;
+        // }
+
+        if (e.key === "Backspace") {
+            if (this.currentStave) {
+                this.currentStave.deleteNote();
+
+                this.draw();
+            }
         }
     }
 

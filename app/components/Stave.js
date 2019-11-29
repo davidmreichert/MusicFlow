@@ -195,6 +195,10 @@ export default class StaveModel {
         return this.model.joinVoices;
     }
 
+    get time() {
+        return this.model.time;
+    }
+
     get needsRerender() {
         return this.model.needsRerender;
     }
@@ -334,18 +338,46 @@ export default class StaveModel {
 
         if (note && this.isNewNote(note)) {
             let voice = this.voices.filter(voice => voice.pending)[0];
-
-            this.voices = this.voices.filter(voice => !voice.pending);
-
-            this.voices.push(this.addNoteToVoice(voice, note));
-            this.needsRerender = true;
+            this.updateVoice(voice, note);
         }
 
     }
 
+    updateVoice(voice, note) {
+        this.voices = this.voices.filter(voice => !voice.pending);
+
+        this.voices.push(this.addNoteToVoice(voice, note));
+        this.needsRerender = true;
+    }
+
     saveNote() {
         let voice = this.voices.filter(voice => voice.pending)[0];
-        voice.savedNotes++;
+        if (!this.voiceFull(voice)) {
+            voice.savedNotes++;
+
+            this.updateVoice(voice);
+        }
+    }
+
+    deleteNote() {
+        let voice = this.voices.filter(voice => voice.pending)[0];
+        if (voice.savedNotes > 0) {
+            voice.savedNotes--;
+        }
+
+        this.updateVoice(voice);
+    }
+
+    voiceFull(voice) {
+        let numBeats = this.time.num_beats;
+        let beatValue = this.time.beat_value;
+
+        var sum = 0.0;
+        voice.tickables.forEach(note => {
+            sum += 1/note.duration;
+        });
+
+        return sum === (numBeats / beatValue);
     }
 
     isNewNote(note) {
@@ -385,7 +417,10 @@ export default class StaveModel {
     addNoteToVoice(voice, note, save) {
         if (voice) {
             voice.tickables = voice.tickables.slice(0, voice.savedNotes);
-            voice.tickables.push(note);
+
+            if (note) {
+                voice.tickables.push(note);
+            }
 
             return voice;
         } else {
