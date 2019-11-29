@@ -51,6 +51,9 @@ export default class VexFlow extends Component {
 
     draw() {
         if (this.system.needsRerender) {
+            let addEventListeners = !this.div;
+
+            this.update = true;
             this.div = this.div || document.getElementById("vexflow");
 
             let context = this.getContext(this.div);
@@ -60,8 +63,13 @@ export default class VexFlow extends Component {
                 drawList.reverse().forEach(drawable => drawable.setContext(context).draw());
             }
 
-            this.div.addEventListener("mousemove", this.getClickPosition.bind(this), false);
+            if (addEventListeners) {
+                this.div.addEventListener("mousemove", this.getMousePosition.bind(this), false);
+                this.div.addEventListener("click", this.getClickPosition.bind(this), false);
+            }
+
             this.system.needsRerender = false;
+            this.update = false;
         }
     }
 
@@ -74,7 +82,11 @@ export default class VexFlow extends Component {
     }
 
 
-    getClickPosition(e) {
+    getMousePosition(e) {
+        if (this.update) {
+            return;
+        }
+
         this.div = this.div || document.getElementById("vexflow");
         this.startX = this.startX || this.div.getBoundingClientRect().x
         this.startY = this.startY || this.div.getBoundingClientRect().y;
@@ -82,18 +94,32 @@ export default class VexFlow extends Component {
         var x = e.clientX - this.startX;
         var y = e.clientY - this.startY;
 
-        var stave = this.system.getStave(x, y);
+        this.currentStave = this.system.getStave(x, y);
 
-        if (stave && y < stave.getBottomY() && y > stave.getYForLine(0)) {
-            stave.addNote(y);
+        if (this.currentStave && y < this.currentStave.getBottomY() && y > this.currentStave.getYForLine(0)) {
+            this.currentStave.addNote(y);
         } 
             
         this.draw();
     }
 
+    getClickPosition(e) {
+        if (this.update) {
+            return;
+        }
+
+        let currentTime = Date.now();
+        this.lastClickTime = this.lastClickTime || 0;
+
+        if (currentTime - this.lastClickTime > 100 && this.currentStave) {
+            this.currentStave.saveNote();
+
+            this.draw();
+        }
+    }
+
     render() {
-        return <div id="vexflow">
-        </div>;
+        return <div id="vexflow"></div>;
     }
 
 }

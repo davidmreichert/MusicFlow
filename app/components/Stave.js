@@ -312,7 +312,7 @@ export default class StaveModel {
         return Math.abs(y - staveLineY) < 2;
     }
 
-    addNote(y) {
+    addNote(y) {   
         var notes = {
             "4": {clef: "bass", keys: ["g/2"], duration: "8" },
             "3": {clef: "bass", keys: ["b/2"], duration: "8" },
@@ -333,19 +333,27 @@ export default class StaveModel {
         }
 
         if (note && this.isNewNote(note)) {
+            let voice = this.voices.filter(voice => voice.pending)[0];
+
             this.voices = this.voices.filter(voice => !voice.pending);
-            this.voices.push(this.createVoice([note], true));
+
+            this.voices.push(this.addNoteToVoice(voice, note));
             this.needsRerender = true;
         }
 
+    }
+
+    saveNote() {
+        let voice = this.voices.filter(voice => voice.pending)[0];
+        voice.savedNotes++;
     }
 
     isNewNote(note) {
         var newNote = true;
         this.voices.forEach(voice => {
             if (voice.pending) {
-                voice.tickables.forEach(tickable => {
-                    if (this.compareNotes(note, tickable)) {
+                voice.tickables.forEach((tickable, i) => {
+                    if (i >= voice.savedNotes && this.compareNotes(note, tickable)) {
                         newNote = false;
                     }
                 });
@@ -374,9 +382,21 @@ export default class StaveModel {
         return true;
       }
 
-    createVoice(notes, pending) {
+    addNoteToVoice(voice, note, save) {
+        if (voice) {
+            voice.tickables = voice.tickables.slice(0, voice.savedNotes);
+            voice.tickables.push(note);
+
+            return voice;
+        } else {
+            return this.createVoice([note]);
+        }
+    }
+
+    createVoice(notes) {
         return { 
-            pending: pending,
+            pending: true,
+            savedNotes: 0,
             join: true,
             mode: VF.Voice.Mode.SOFT,
             tickables: notes,
