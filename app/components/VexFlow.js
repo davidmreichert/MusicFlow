@@ -15,24 +15,6 @@ export default class VexFlow extends Component {
         this.system = new SystemModel();
     }
 
-    createDrawableObjects(modelInfo) {
-        if (!modelInfo.needsRerender) {
-            return;
-        }
-        if (modelInfo.staves && modelInfo.staves.length) {
-            var drawList = [];
-
-            modelInfo.updateStaveWidths();
-            this.staves = modelInfo.staves.map(stave => {
-                drawList.push.apply(drawList, stave.getDrawList());
-                return stave.getVFStave(true);
-            });
-        
-            drawList.push.apply(drawList, this.staves);        
-            return drawList;
-        }
-    }
-
     getContext(div) {
         let context = VF.Renderer.lastContext;
         if (!context) {
@@ -53,13 +35,12 @@ export default class VexFlow extends Component {
     draw() {
         if (this.system.needsRerender) {
             let addEventListeners = !this.div;
-            console.log(this.staves);
 
             this.update = true;
             this.div = this.div || document.getElementById("vexflow");
 
             let context = this.getContext(this.div);
-            let drawList = this.createDrawableObjects(this.system);
+            let drawList = this.system.createDrawableObjects(this.system);
 
             if (drawList) {
                 drawList.reverse().forEach(drawable => drawable.setContext(context).draw());
@@ -68,7 +49,7 @@ export default class VexFlow extends Component {
             if (addEventListeners) {
                 this.div.addEventListener("mousemove", this.getMousePosition.bind(this), false);
                 this.div.addEventListener("click", this.getClickPosition.bind(this), false);
-                document.addEventListener("keyup", this.shortcuts.bind(this), false);
+                //document.addEventListener("keyup", this.shortcuts.bind(this), false);
             }
 
             this.system.needsRerender = false;
@@ -94,20 +75,36 @@ export default class VexFlow extends Component {
         this.startX = this.startX || this.div.getBoundingClientRect().x
         this.startY = this.startY || this.div.getBoundingClientRect().y;
 
-        var x = e.clientX - this.startX;
-        var y = e.clientY - this.startY;
+        // Gets location of scrolled window relative to page. Ensure mouse location
+        // correctly interpretted.
+        var doc = document.documentElement;
+        var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
+        var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+
+        var x = (e.clientX + left) - this.startX;
+        var y = (e.clientY + top) - this.startY;
 
         let staveInfo = this.system.getStave(x, y);
-
+        let switchStaveLine = false;
         if (staveInfo) {
             this.currentStave = staveInfo.stave;
+            
+            // checks if we've switched staves
+            switchStaveLine = this.currentStaveIndex 
+                && (this.currentStaveIndex.line !== staveInfo.index.line || this.currentStaveIndex.stave !== staveInfo.index.stave);
+
             this.currentStaveIndex = staveInfo.index;
         }
 
         // If current stave is pending and mouse is between the lines, add note
         if ((this.currentStave && this.currentStave.pending) &&
-            (y < this.currentStave.getBottomY() && y > this.currentStave.getYForLine(0))) {
-                this.currentStave.addNote(y);
+            (y < this.currentStave.getBottomY() && y > this.currentStave.getTopY())) {
+                this.system.addNote(this.currentStaveIndex, y);
+
+                console.log(switchStaveLine);
+                if (switchStaveLine) {
+                    this.system.removePendingNotes();
+                }
         } else {
             this.system.removePendingNotes();
         }
@@ -127,7 +124,7 @@ export default class VexFlow extends Component {
         if (currentTime - this.lastClickTime > 100 && this.currentStave) {
             let voiceFull = this.currentStave.saveNote();
             if (voiceFull) {
-                if (this.currentStaveIndex === this.system.staves.length - 1) {
+                if (this.currentStaveIndex.stave === this.system.length - 1) {
                     this.system.addStave();
                 }
                 
@@ -147,6 +144,18 @@ export default class VexFlow extends Component {
         if (e.key === "Backspace") {
             if (this.currentStave) {
                 this.currentStave.deleteNote();
+
+                this.draw();
+            }
+        } else if (e.key === "ArrowUp") {
+            if (this.currentStave) {
+                this.currentStave.y -= 5;
+
+                this.draw();
+            }
+        } else if (e.key === "ArrayDown") {
+            if (this.currentStave) {
+                this.currentStave.y += 5;
 
                 this.draw();
             }

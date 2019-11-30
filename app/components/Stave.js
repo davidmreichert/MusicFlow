@@ -4,31 +4,9 @@ import {size} from 'underscore'
 const VF = Vex.Flow;
 
 export default class StaveModel {
-    constructor(lastStave, firstStave, canvasWidth, canvasHeight) {
-        if (!lastStave || !firstStave || !canvasWidth || !canvasHeight) {
-            this.setDefaultModel();
-        } else {
-            this.setEmptyModel();
-            let fullWidth = lastStave.x + lastStave.width + StaveModel.DEFAULT.WIDTH;
-
-            if (fullWidth < canvasWidth) {
-                this.x = lastStave.x + lastStave.width;
-                this.y = lastStave.y;
-            } else {
-                this.x = firstStave.x;
-                this.y = firstStave.getBottomY();
-            }
-
-            this.width = StaveModel.DEFAULT.WIDTH;
-            this.notePad = StaveModel.DEFAULT.NOTE_PAD;
-            this.voices = StaveModel.DEFAULT.VOICES;
-
-            this.time = lastStave.time;
-            
-            if (this.getBottomY() > canvasHeight) {
-                throw "Canvas limit reached. Please increase height";
-            }
-        }
+    constructor(props) {
+        props = props || {};
+        this.mergeDefaultModel(props);
     }
 
     static get DEFAULT() {
@@ -36,7 +14,7 @@ export default class StaveModel {
             WIDTH: 400,
             NOTE_PAD: 60,
             X: 10,
-            Y: 40,
+            Y: 70,
             CLEF: "bass",
             TIME_SIGNATURE: "4/4",
             KEY_SIGNATURE: "C",
@@ -55,20 +33,19 @@ export default class StaveModel {
         }
     }
 
-    setDefaultModel() {
+    mergeDefaultModel(props) {
         this.model = {
             needsRerender: true,
-            x: StaveModel.DEFAULT.X,
-            y: StaveModel.DEFAULT.Y,
-            width: StaveModel.DEFAULT.WIDTH,
-            notePad: StaveModel.DEFAULT.NOTE_PAD,
-            clef: StaveModel.DEFAULT.CLEF,
-            timeSignature: StaveModel.DEFAULT.TIME_SIGNATURE,
-            keySignature: StaveModel.DEFAULT.KEY_SIGNATURE,
-            joinVoices: StaveModel.DEFAULT.JOIN,
-            time: StaveModel.DEFAULT.TIME,
-            voices: StaveModel.DEFAULT.VOICES
-        };
+            x: props.x || StaveModel.DEFAULT.X,
+            y: props.y || StaveModel.DEFAULT.Y,
+            width: props.width || StaveModel.DEFAULT.WIDTH,
+            notePad: props.notePad || StaveModel.DEFAULT.NOTE_PAD,
+            clef: props.clef || StaveModel.DEFAULT.CLEF,
+            timeSignature: props.timeSignature || StaveModel.DEFAULT.TIME_SIGNATURE,
+            keySignature: props.keySignature || StaveModel.DEFAULT.KEY_SIGNATURE,
+            time: props.time || StaveModel.DEFAULT.TIME,
+            voices: props.voices || StaveModel.DEFAULT.VOICES
+        }
     }
 
     /**
@@ -107,20 +84,6 @@ export default class StaveModel {
             this.addOptionalParameters(this.vfStave);
 
             if (this.voices && this.voices.length) {
-                var numNotes = 0;
-                this.voices.forEach(voice => {
-                    if (voice.tickables && voice.tickables.length > numNotes) {
-                        numNotes = voice.tickables.length;
-                    }
-                });
-
-                let width = numNotes * this.notePad;
-                if (width > this.width) 
-                {
-                    this.width = numNotes * 60;
-                    this.vfStave.setWidth(numNotes * 60);
-                }
-
                 var vfTickablesList = [];
                 var vfVoices = this.voices.map(voice => {
                     var vfVoice = new VF.Voice(this.time).setMode(voice.mode);
@@ -137,7 +100,7 @@ export default class StaveModel {
 
                     return vfVoice;
                 });
-
+                
                 var joinedVoices = vfVoices.filter((vfVoice, i) => this.voices[i].join);
                 var unjoinedVoices = vfVoices.filter((vfVoice, i) => !this.voices[i].join);
                 
@@ -181,6 +144,8 @@ export default class StaveModel {
                 this.drawList.push.apply(this.drawList, vfVoices);
             }
 
+            console.log()
+
             return this.vfStave;
         } else {
             return this.vfStave;
@@ -199,6 +164,10 @@ export default class StaveModel {
     getBottomY() {
         return this.getVFStave().getBottomY();
     }
+    
+    getTopY() {
+        return this.getVFStave().getBoundingBox().y;
+    }
 
     getYForLine(lineNum) {
         return this.getVFStave().getYForLine(lineNum);
@@ -208,35 +177,95 @@ export default class StaveModel {
         return Math.abs(y - staveLineY) < 2;
     }
 
-    addNote(y) {   
-        var notes = {
-            "8": {clef: "bass", keys: ["g/2"], duration: "8" },
-            "7": {clef: "bass", keys: ["a/2"], duration: "8" },
-            "6": {clef: "bass", keys: ["b/2"], duration: "8" },
-            "5": {clef: "bass", keys: ["c/3"], duration: "8" },
-            "4": {clef: "bass", keys: ["d/3"], duration: "8" },
-            "3": {clef: "bass", keys: ["e/3"], duration: "8" },
-            "2": {clef: "bass", keys: ["f/3"], duration: "8" },
-            "1": {clef: "bass", keys: ["g/3"], duration: "8" },
-            "0": {clef: "bass", keys: ["a/3"], duration: "8" }
-        };
+    /**
+     * Gets start info for bass or trebel clef.
+     * returns: {
+     *      note: index of note (c == 0, b == 6)
+     *      octave: piano octave
+     *  }
+     */
+    getStartForClef(clef) {
+        if (clef === "bass") {
+            return {
+                note: 1, // d
+                octave: 1
+            };
+        } else if (clef === "treble") {
+            return {
+                note: 6, // b
+                octave: 2
+            };
+        }
+    }
 
+    createNotesMap(clef, duration) {
+        var noteNames = ['c','d','e','f','g','a','b'];
+        var noteInfo = this.getStartForClef(clef);
 
-        var note;
-        for(var i = 0; i < size(notes); i++) {
-            var lineY = this.getYForLine(i/2);
-            var inBounds = this.checkYBounds(y, lineY);
-            if (inBounds) {
-                note = notes["" + i];
-                break;
+        var notes = {};
+        for (let i = 18; i >= -8; i--) {
+            notes["" + i] = {
+                clef: clef, 
+                keys: [noteNames[noteInfo.note] + "/" + noteInfo.octave], 
+                duration: duration
+            }
+
+            noteInfo.note = (noteInfo.note + 1) % noteNames.length;
+            if (noteInfo.note == 0) {
+                noteInfo.octave++;
             }
         }
+
+        return notes;
+    }
+
+    addNote(yCoord, clef) {
+        clef = this.clef || clef;
+        let notes = this.createNotesMap(clef,"8");
+        // var notes = {
+        //     "18": {clef: "bass", keys: ["d/1"], duration: "8" },
+        //     "17": {clef: "bass", keys: ["e/1"], duration: "8" },
+        //     "16": {clef: "bass", keys: ["f/1"], duration: "8" },
+        //     "15": {clef: "bass", keys: ["g/1"], duration: "8" },
+        //     "14": {clef: "bass", keys: ["a/1"], duration: "8" },
+        //     "13": {clef: "bass", keys: ["b/1"], duration: "8" },
+        //     "12": {clef: "bass", keys: ["c/2"], duration: "8" },
+        //     "11": {clef: "bass", keys: ["d/2"], duration: "8" },
+        //     "10": {clef: "bass", keys: ["e/2"], duration: "8" },
+        //     "9": {clef: "bass", keys: ["f/2"], duration: "8" },
+        //     "8": {clef: "bass", keys: ["g/2"], duration: "8" },
+        //     "7": {clef: "bass", keys: ["a/2"], duration: "8" },
+        //     "6": {clef: "bass", keys: ["b/2"], duration: "8" },
+        //     "5": {clef: "bass", keys: ["c/3"], duration: "8" },
+        //     "4": {clef: "bass", keys: ["d/3"], duration: "8" },
+        //     "3": {clef: "bass", keys: ["e/3"], duration: "8" },
+        //     "2": {clef: "bass", keys: ["f/3"], duration: "8" },
+        //     "1": {clef: "bass", keys: ["g/3"], duration: "8" },
+        //     "0": {clef: "bass", keys: ["a/3"], duration: "8" },
+        //     "-1": {clef: "bass", keys: ["b/3"], duration: "8" },
+        //     "-2": {clef: "bass", keys: ["c/4"], duration: "8" },
+        //     "-3": {clef: "bass", keys: ["d/4"], duration: "8" },
+        //     "-4": {clef: "bass", keys: ["e/4"], duration: "8" },
+        //     "-5": {clef: "bass", keys: ["f/4"], duration: "8" },
+        //     "-6": {clef: "bass", keys: ["g/4"], duration: "8" },
+        //     "-7": {clef: "bass", keys: ["a/4"], duration: "8" },
+        //     "-8": {clef: "bass", keys: ["b/4"], duration: "8" }
+        // };
+
+
+        let note;
+        Object.entries(notes).forEach(entry => {
+            let lineY = this.getYForLine(parseInt(entry[0])/2);
+            let inBounds = this.checkYBounds(yCoord, lineY);
+            if (inBounds) {
+                note = entry[1];
+            }
+        });
 
         if (note && this.isNewNote(note)) {
             let voice = this.voices.filter(voice => voice.pending)[0];
             this.updateVoice(voice, note);
         }
-
     }
 
     updateVoice(voice, note) {
@@ -268,7 +297,6 @@ export default class StaveModel {
         if (this.voices.length > 0) {
             let voice = this.voices.filter(voice => voice.pending)[0];
             if (!this.voiceFull(voice)) {
-                console.log("hello")
                 this.incrementSavedNotes(voice, 1);
                 this.updateVoice(voice);
 
@@ -380,71 +408,6 @@ export default class StaveModel {
                 ]
             }
         }
-
-        // return {
-        //     pending: pending,
-        //     join: true,
-        //     mode: VF.Voice.Mode.STRICT,
-        //     tickables: [
-        //         {
-        //             clef: "bass",
-        //             keys: ["a/2"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["b/2"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["c/3"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["d/3"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["e/3"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["f/3"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["g/3"],
-        //             duration: "8"
-        //         },
-        //         {
-        //             clef: "bass",
-        //             keys: ["a/3"],
-        //             duration: "8"
-        //         }
-        //     ],
-        //     beams: {
-        //         direction: VF.Stem.DOWN,
-        //         groups: [
-        //             {
-        //                 numerator: 4,
-        //                 denominator: 8
-        //             }
-        //         ]
-        //     },
-        //     ties: [
-        //         {
-        //             first_note: 3,
-        //             last_note: 4,
-        //             first_indices: [0],
-        //             last_indices: [0]
-        //         }
-        //     ]
-        // }
     }
 
 
@@ -507,40 +470,47 @@ export default class StaveModel {
 
     set x(x) {
         this.model.x = x;
+        this.needsRerender = true;
     }
 
     set y(y) {
         this.model.y = y;
+        this.needsRerender = true;
     }
 
     set width(width) {
         this.model.width = width;
         this.needsRerender = true;
-        return this;
     }
 
     set notePad(notePad) {
         this.model.notePad = notePad;
+        this.needsRerender = true;
     }
 
     set clef(clef) {
         this.model.clef = clef;
+        this.needsRerender = true;
     }
 
     set timeSignature(timeSignature) {
         this.model.timeSignature = timeSignature;
+        this.needsRerender = true;
     }
 
     set keySignature(keySignature) {
         this.model.keySignature = keySignature;
+        this.needsRerender = true;
     }
 
     set joinVoices(joinVoices) {
         this.model.joinVoices = joinVoices;
+        this.needsRerender = true;
     }
 
     set time(time) {
         this.model.time = time;
+        this.needsRerender = true;
     }
 
     set needsRerender(needsRerender) {
