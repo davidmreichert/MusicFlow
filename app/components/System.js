@@ -209,7 +209,6 @@ export default class SystemModel {
 
             //Create stave connectors
             this.staveConnectors.forEach(connector => {
-                console.log(connector);
                 let staves = this.staveLines.map(staveLine => staveLine.getStave(connector.index));
 
                 // Get top and bottom of the grand staff

@@ -144,8 +144,6 @@ export default class StaveModel {
                 this.drawList.push.apply(this.drawList, vfVoices);
             }
 
-            console.log()
-
             return this.vfStave;
         } else {
             return this.vfStave;

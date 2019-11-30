@@ -1,6 +1,6 @@
 import Vex from 'vexflow';
 import React, {Component} from 'react';
-import SystemModel from './system';
+import SystemModel from './System';
 
 const VF = Vex.Flow;
 
@@ -9,7 +9,15 @@ export default class VexFlow extends Component {
         super(props);
 
         this.setDefaultState();
-    };
+    }
+
+    get APP_NAME() {
+        return "VexEdit";
+    }
+
+    get DIV_NAME() {
+        return "system";
+    }
 
     setDefaultState() {
         this.system = new SystemModel();
@@ -19,7 +27,7 @@ export default class VexFlow extends Component {
         let context = VF.Renderer.lastContext;
         if (!context) {
             var renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
-            renderer.lastContext        
+
             // Configure the rendering context.
             renderer.resize(this.system.width, this.system.height);
 
@@ -37,7 +45,7 @@ export default class VexFlow extends Component {
             let addEventListeners = !this.div;
 
             this.update = true;
-            this.div = this.div || document.getElementById("vexflow");
+            this.div = this.div || document.getElementById(this.DIV_NAME);
 
             let context = this.getContext(this.div);
             let drawList = this.system.createDrawableObjects(this.system);
@@ -71,8 +79,8 @@ export default class VexFlow extends Component {
             return;
         }
 
-        this.div = this.div || document.getElementById("vexflow");
-        this.startX = this.startX || this.div.getBoundingClientRect().x
+        this.div = this.div || document.getElementById(this.DIV_NAME);
+        this.startX = this.startX || this.div.getBoundingClientRect().x;
         this.startY = this.startY || this.div.getBoundingClientRect().y;
 
         // Gets location of scrolled window relative to page. Ensure mouse location
@@ -101,7 +109,6 @@ export default class VexFlow extends Component {
             (y < this.currentStave.getBottomY() && y > this.currentStave.getTopY())) {
                 this.system.addNote(this.currentStaveIndex, y);
 
-                console.log(switchStaveLine);
                 if (switchStaveLine) {
                     this.system.removePendingNotes();
                 }
@@ -163,7 +170,12 @@ export default class VexFlow extends Component {
     }
 
     render() {
-        return <div id="vexflow"></div>;
+        return (
+            <div id={ this.APP_NAME }>
+                <div id={ this.DIV_NAME } />
+                <button type="button" class="btn btn-dark">Dark</button>
+            </div>
+        );
     }
 
 }

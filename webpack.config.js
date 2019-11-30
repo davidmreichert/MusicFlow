@@ -1,5 +1,4 @@
 //webpack.config.js
-
 module.exports = {
     entry: './app/main.js',
     output: {
@@ -11,7 +10,11 @@ module.exports = {
                 loader: 'babel-loader',
                 test: /\.js$/,
                 exclude: /node_modules/
-            }
+            },
+            {
+                test: /\.css$/,
+                use: ['style-loader', 'css-loader']
+            } 
         ]
     },
     devServer: {
