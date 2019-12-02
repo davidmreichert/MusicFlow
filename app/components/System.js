@@ -13,7 +13,7 @@ export default class SystemModel {
         this.model = {
             needsRerender: true,
             width: 1500,
-            height: 1500,
+            height: 500,
             startX: 30,
             startY: 70,
             staveLines: [],

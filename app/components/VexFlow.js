@@ -1,6 +1,7 @@
 import Vex from 'vexflow';
 import React, {Component} from 'react';
 import SystemModel from './System';
+import Tone from 'tone';
 
 const VF = Vex.Flow;
 
@@ -9,6 +10,62 @@ export default class VexFlow extends Component {
         super(props);
 
         this.setDefaultState();
+
+        this.tone = new Tone();
+        this.synth = new Tone.PolySynth(35, Tone.Synth, {
+            oscillator: {
+                type: 'fmsquare',
+                modulationType: 'sawtooth',
+                modulationIndex: 3,
+                harmonicity: 3.4
+            }
+        }).toMaster();        
+    }
+
+    /**
+     * Plays a synth noise for the given notes
+     * @param notes: List of notes to sounded at the same time
+     */
+    playNote(note, startTime) {
+        if (note) {
+            let tones = 
+                note.keys.map(key => {
+                    let name = key.slice(0,1).toUpperCase();
+                    let octave = key.slice(2,3);    
+                    
+                    return name + octave;
+                });
+
+            this.synth.triggerAttackRelease(tones, note.duration + "n", startTime);
+        }
+    }
+
+    playSystem() {
+        Tone.Transport.cancel(0);
+        Tone.Transport.stop(0);
+
+        this.synth.unsync();
+        this.synth.sync();
+        let maxTime = 0;
+        this.system.staveLines.forEach(staveLine => {
+            staveLine.forEach((stave, i)=> {
+                let staveTime = this.tone.toSeconds(i + "m"); // ith measure
+                stave.voices.forEach(voice => {
+                    let noteTime = staveTime;
+                    voice.tickables.forEach(note => {
+                        this.playNote(note, noteTime);
+
+                        noteTime += this.tone.toSeconds(note.duration + "n");
+
+                        if (maxTime < noteTime) {
+                            maxTime == noteTime;
+                        }
+                    });
+                })
+            })
+        })
+
+        Tone.Transport.start();
     }
 
     get APP_NAME() {
@@ -55,9 +112,9 @@ export default class VexFlow extends Component {
             }
 
             if (addEventListeners) {
-                this.div.addEventListener("mousemove", this.getMousePosition.bind(this), false);
-                this.div.addEventListener("click", this.getClickPosition.bind(this), false);
-                //document.addEventListener("keyup", this.shortcuts.bind(this), false);
+                this.div.addEventListener("mousemove", this.onMouseMove.bind(this), false);
+                this.div.addEventListener("click", this.onClick.bind(this), false);
+                document.addEventListener("keyup", this.shortcuts.bind(this), false);
             }
 
             this.system.needsRerender = false;
@@ -73,12 +130,43 @@ export default class VexFlow extends Component {
         return Math.abs(y - staveLineY) < 2;
     }
 
-
-    getMousePosition(e) {
+    onMouseMove(e) {
         if (this.update) {
             return;
         }
 
+        let mouse = this.getMousePosition(e);
+
+        this.addPendingNote(mouse.x, mouse.y);
+    }
+
+    onClick(e) {
+        if (this.update || 
+            (this.currentStave && !this.currentStave.pending)) {
+            return;
+        }
+
+        let currentTime = Date.now();
+        this.lastClickTime = this.lastClickTime || 0;
+
+        if (currentTime - this.lastClickTime > 100 && this.currentStave) {
+            let voiceFull = this.currentStave.saveNote();
+            if (voiceFull) {
+                if (this.currentStaveIndex.stave === this.system.length - 1) {
+                    this.system.addStave();
+                }
+                
+                this.currentStave.saveNote(true);
+            }
+            this.playNote(this.currentStave.getLastNote());
+
+            let mouse = this.getMousePosition(e);
+            this.addPendingNote(mouse.x, mouse.y);
+        }
+    }
+
+
+    getMousePosition(e) {
         this.div = this.div || document.getElementById(this.DIV_NAME);
         this.startX = this.startX || this.div.getBoundingClientRect().x;
         this.startY = this.startY || this.div.getBoundingClientRect().y;
@@ -92,6 +180,13 @@ export default class VexFlow extends Component {
         var x = (e.clientX + left) - this.startX;
         var y = (e.clientY + top) - this.startY;
 
+        return {
+            x: x,
+            y: y
+        }
+    }
+
+    addPendingNote(x,y) {
         let staveInfo = this.system.getStave(x, y);
         let switchStaveLine = false;
         if (staveInfo) {
@@ -119,29 +214,6 @@ export default class VexFlow extends Component {
         this.draw();
     }
 
-    getClickPosition(e) {
-        if (this.update || 
-            (this.currentStave && !this.currentStave.pending)) {
-            return;
-        }
-
-        let currentTime = Date.now();
-        this.lastClickTime = this.lastClickTime || 0;
-
-        if (currentTime - this.lastClickTime > 100 && this.currentStave) {
-            let voiceFull = this.currentStave.saveNote();
-            if (voiceFull) {
-                if (this.currentStaveIndex.stave === this.system.length - 1) {
-                    this.system.addStave();
-                }
-                
-                this.currentStave.saveNote(true);
-            }
-
-            this.draw();
-        }
-    }
-
     shortcuts(e) {
         // // ignore all keyup events that are part of composition
         // if (event.isComposing || event.keyCode === 229) {
@@ -166,14 +238,23 @@ export default class VexFlow extends Component {
 
                 this.draw();
             }
+        } else if (e.key === "p") {
+            this.playSystem();
+        } else if (e.key === "h") {
+            this.currentStave.noteDuration = "2"; // Half note
+        } else if (e.key === "q") {
+            this.currentStave.noteDuration = "4";
+        } else if (e.key == "8") {
+            this.currentStave.noteDuration = "8";
         }
+
     }
 
     render() {
         return (
             <div id={ this.APP_NAME }>
                 <div id={ this.DIV_NAME } />
-                <button type="button" class="btn btn-dark">Dark</button>
+                <button type="button" className="btn btn-dark" onClick={this.playSystem.bind(this)}>Play</button>
             </div>
         );
     }

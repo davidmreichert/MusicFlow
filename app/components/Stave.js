@@ -23,6 +23,7 @@ export default class StaveModel {
                 beat_value: 4,
                 resolution: VF.RESOLUTION
             },
+            NOTE_DURATION: "8", // Eighth note
             VOICES: []
         }
     }
@@ -44,8 +45,10 @@ export default class StaveModel {
             timeSignature: props.timeSignature || StaveModel.DEFAULT.TIME_SIGNATURE,
             keySignature: props.keySignature || StaveModel.DEFAULT.KEY_SIGNATURE,
             time: props.time || StaveModel.DEFAULT.TIME,
+            noteDuration: props.noteDuration || StaveModel.DEFAULT.NOTE_DURATION,
             voices: props.voices || StaveModel.DEFAULT.VOICES
         }
+        console.log(this.model);
     }
 
     /**
@@ -219,37 +222,7 @@ export default class StaveModel {
 
     addNote(yCoord, clef) {
         clef = this.clef || clef;
-        let notes = this.createNotesMap(clef,"8");
-        // var notes = {
-        //     "18": {clef: "bass", keys: ["d/1"], duration: "8" },
-        //     "17": {clef: "bass", keys: ["e/1"], duration: "8" },
-        //     "16": {clef: "bass", keys: ["f/1"], duration: "8" },
-        //     "15": {clef: "bass", keys: ["g/1"], duration: "8" },
-        //     "14": {clef: "bass", keys: ["a/1"], duration: "8" },
-        //     "13": {clef: "bass", keys: ["b/1"], duration: "8" },
-        //     "12": {clef: "bass", keys: ["c/2"], duration: "8" },
-        //     "11": {clef: "bass", keys: ["d/2"], duration: "8" },
-        //     "10": {clef: "bass", keys: ["e/2"], duration: "8" },
-        //     "9": {clef: "bass", keys: ["f/2"], duration: "8" },
-        //     "8": {clef: "bass", keys: ["g/2"], duration: "8" },
-        //     "7": {clef: "bass", keys: ["a/2"], duration: "8" },
-        //     "6": {clef: "bass", keys: ["b/2"], duration: "8" },
-        //     "5": {clef: "bass", keys: ["c/3"], duration: "8" },
-        //     "4": {clef: "bass", keys: ["d/3"], duration: "8" },
-        //     "3": {clef: "bass", keys: ["e/3"], duration: "8" },
-        //     "2": {clef: "bass", keys: ["f/3"], duration: "8" },
-        //     "1": {clef: "bass", keys: ["g/3"], duration: "8" },
-        //     "0": {clef: "bass", keys: ["a/3"], duration: "8" },
-        //     "-1": {clef: "bass", keys: ["b/3"], duration: "8" },
-        //     "-2": {clef: "bass", keys: ["c/4"], duration: "8" },
-        //     "-3": {clef: "bass", keys: ["d/4"], duration: "8" },
-        //     "-4": {clef: "bass", keys: ["e/4"], duration: "8" },
-        //     "-5": {clef: "bass", keys: ["f/4"], duration: "8" },
-        //     "-6": {clef: "bass", keys: ["g/4"], duration: "8" },
-        //     "-7": {clef: "bass", keys: ["a/4"], duration: "8" },
-        //     "-8": {clef: "bass", keys: ["b/4"], duration: "8" }
-        // };
-
+        let notes = this.createNotesMap(clef, this.noteDuration);
 
         let note;
         Object.entries(notes).forEach(entry => {
@@ -289,6 +262,11 @@ export default class StaveModel {
         } else {
             voice.savedNotes += amount;
         }
+    }
+
+    getLastNote() {
+        let notes = this.voices[this.voices.length - 1].tickables;
+        return notes[notes.length - 1];
     }
 
     saveNote(finalNote) {
@@ -459,6 +437,10 @@ export default class StaveModel {
         return this.model.needsRerender;
     }
 
+    get noteDuration() {
+        return this.model.noteDuration || StaveModel.DEFAULT.NOTE_DURATION;
+    }
+
     /* Setters */
 
     set voices(voices) {
@@ -513,5 +495,9 @@ export default class StaveModel {
 
     set needsRerender(needsRerender) {
         this.model.needsRerender = needsRerender;
+    }
+
+    set noteDuration(noteDuration) {
+        this.model.noteDuration = noteDuration;
     }
 }

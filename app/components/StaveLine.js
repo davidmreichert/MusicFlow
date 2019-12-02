@@ -33,7 +33,6 @@ export default class StaveLine {
     }
 
     set y(y) {
-        console.log(y);
         this.staves.forEach(stave => {
             stave.y = y;
         });
