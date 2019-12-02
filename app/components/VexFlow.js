@@ -1,7 +1,7 @@
 import Vex from 'vexflow';
 import React, {Component} from 'react';
-import SystemModel from './System';
-import ToneWrapper from './Tone.js';
+import SystemModel from './wrappers/System';
+import ToneWrapper from './wrappers/Tone.js';
 
 const VF = Vex.Flow;
 
@@ -119,17 +119,21 @@ export default class VexFlow extends Component {
 
     getMousePosition(e) {
         this.div = this.div || document.getElementById(this.DIV_NAME);
-        this.startX = this.startX || this.div.getBoundingClientRect().x;
-        this.startY = this.startY || this.div.getBoundingClientRect().y;
+        this.startX = this.div.getBoundingClientRect().x;
+        this.startY = this.div.getBoundingClientRect().y;
 
         // Gets location of scrolled window relative to page. Ensure mouse location
         // correctly interpretted.
-        var doc = document.documentElement;
-        var left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
-        var top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+        // let doc = document.documentElement;
+        // let left = (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
+        // let top = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
 
-        var x = (e.clientX + left) - this.startX;
-        var y = (e.clientY + top) - this.startY;
+        // console.log(`${left}, ${top}`);
+
+        let x = (e.clientX) - this.startX;
+        let y = (e.clientY) - this.startY;
+
+        console.log(`${x}, ${y}`);
 
         return {
             x: x,

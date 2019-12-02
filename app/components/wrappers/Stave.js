@@ -272,22 +272,19 @@ export default class StaveModel {
     saveNote(finalNote) {
         if (this.voices.length > 0) {
             let voice = this.voices.filter(voice => voice.pending)[0];
-            if (!this.voiceFull(voice)) {
+            if (voice) {
                 this.incrementSavedNotes(voice, 1);
                 this.updateVoice(voice);
-
                 this.needsRerender = true;
-                return false;
-            } else if (finalNote) {
-                this.incrementSavedNotes(voice, 1);
-                this.updateVoice(voice);
 
-                voice.pending = false;
+                if (!this.voiceFull(voice)) {
+                    return false;
+                } else {
+                    voice.pending = false;
+                }
 
-                this.needsRerender = true;
+                return true;
             }
-
-            return true;
         }
     }
 

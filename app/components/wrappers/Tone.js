@@ -24,6 +24,7 @@ export default class ToneWrapper {
         }
         
         if (note) {
+            console.log(startTime);
             let tones = 
                 note.keys.map(key => {
                     let name = key.slice(0,1).toUpperCase();
@@ -55,7 +56,7 @@ export default class ToneWrapper {
                         noteTime += this.tone.toSeconds(note.duration + "n");
 
                         if (maxTime < noteTime) {
-                            maxTime == noteTime;
+                            maxTime = noteTime;
                         }
                     });
                 })
