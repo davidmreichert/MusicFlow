@@ -13,7 +13,7 @@ export default class SystemModel {
         this.model = {
             needsRerender: true,
             width: 1500,
-            height: 500,
+            height: 1500,
             startX: 30,
             startY: 70,
             staveLines: [],
@@ -107,7 +107,7 @@ export default class SystemModel {
             newStave.time = lastStave.time;
             
             if (newStave.getBottomY() > this.height) {
-                throw "Canvas limit reached. Please increase height";
+                this.height = this.height * 2;
             }
 
             this.staveLines[i].push(newStave);

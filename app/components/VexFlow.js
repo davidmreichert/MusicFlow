@@ -1,7 +1,7 @@
 import Vex from 'vexflow';
 import React, {Component} from 'react';
 import SystemModel from './System';
-import Tone from 'tone';
+import ToneWrapper from './Tone.js';
 
 const VF = Vex.Flow;
 
@@ -9,63 +9,9 @@ export default class VexFlow extends Component {
     constructor(props) {
         super(props);
 
-        this.setDefaultState();
+        this.setDefaultState();   
 
-        this.tone = new Tone();
-        this.synth = new Tone.PolySynth(35, Tone.Synth, {
-            oscillator: {
-                type: 'fmsquare',
-                modulationType: 'sawtooth',
-                modulationIndex: 3,
-                harmonicity: 3.4
-            }
-        }).toMaster();        
-    }
-
-    /**
-     * Plays a synth noise for the given notes
-     * @param notes: List of notes to sounded at the same time
-     */
-    playNote(note, startTime) {
-        if (note) {
-            let tones = 
-                note.keys.map(key => {
-                    let name = key.slice(0,1).toUpperCase();
-                    let octave = key.slice(2,3);    
-                    
-                    return name + octave;
-                });
-
-            this.synth.triggerAttackRelease(tones, note.duration + "n", startTime);
-        }
-    }
-
-    playSystem() {
-        Tone.Transport.cancel(0);
-        Tone.Transport.stop(0);
-
-        this.synth.unsync();
-        this.synth.sync();
-        let maxTime = 0;
-        this.system.staveLines.forEach(staveLine => {
-            staveLine.forEach((stave, i)=> {
-                let staveTime = this.tone.toSeconds(i + "m"); // ith measure
-                stave.voices.forEach(voice => {
-                    let noteTime = staveTime;
-                    voice.tickables.forEach(note => {
-                        this.playNote(note, noteTime);
-
-                        noteTime += this.tone.toSeconds(note.duration + "n");
-
-                        if (maxTime < noteTime) {
-                            maxTime == noteTime;
-                        }
-                    });
-                })
-            })
-        })
-
-        Tone.Transport.start();
+        this.tone = new ToneWrapper();
     }
 
     get APP_NAME() {
@@ -78,6 +24,10 @@ export default class VexFlow extends Component {
 
     setDefaultState() {
         this.system = new SystemModel();
+    }
+
+    playSystem() {
+        this.tone.playSystem(this.system);
     }
 
     getContext(div) {
@@ -158,7 +108,8 @@ export default class VexFlow extends Component {
                 
                 this.currentStave.saveNote(true);
             }
-            this.playNote(this.currentStave.getLastNote());
+            this.tone.unsync();
+            this.tone.playNote(this.currentStave.getLastNote());
 
             let mouse = this.getMousePosition(e);
             this.addPendingNote(mouse.x, mouse.y);
