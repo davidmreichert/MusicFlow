@@ -139,7 +139,8 @@ export default class SystemModel {
         let staveLine = this.staveLines[staveIndex.line];
         let stave = staveLine.getStave(staveIndex.stave);
 
-        stave.addNote(yCoord, staveLine.getStave(0).clef);
+        let note = stave.findNote(yCoord, staveLine.getStave(0).clef);
+        stave.addNote(note);
     }
     /**
      * Updates the stave widths if there are enough notes.

@@ -1,8 +1,13 @@
 import Vex from 'vexflow';
 import Voice from './Voice';
+import Note from './Note';
 
 const VF = Vex.Flow;
 
+/**
+ * Class represents a stave in the system. Each stave corresponds to
+ * a measure in a stave line, and contains a list of voices containing notes
+ */
 export default class StaveModel {
     constructor(props) {
         props = props || {};
@@ -127,6 +132,10 @@ export default class StaveModel {
         }
     }
 
+    /**
+     * Gets list of drawable VF objects. If it hasn't been
+     * created yet, creates it first.
+     */
     getDrawList() {
         if (this.drawlist) {
             return this.drawlist;
@@ -136,18 +145,32 @@ export default class StaveModel {
         }
     }
 
+    /**
+     * Gets the location of the bottom of the stave
+     */
     getBottomY() {
         return this.getVFStave().getBottomY();
     }
     
+    /**
+     * Gets the location of the top of the svae
+     */
     getTopY() {
         return this.getVFStave().getBoundingBox().y;
     }
 
+    /**
+     * Gets the vertical location of the line on the stave. 
+     * Also works for lines not within the stave (i.e. negatives and
+     * over 5)
+     */
     getYForLine(lineNum) {
         return this.getVFStave().getYForLine(lineNum);
     }
 
+    /**
+     * Gets if y is within 2 pixels fo the line
+     */
     checkYBounds(y, staveLineY) {
         return Math.abs(y - staveLineY) < 2;
     }
@@ -174,35 +197,12 @@ export default class StaveModel {
     }
 
     /**
-     * 
-     * @param {String} clef 
-     * @param {Integer} duration 
-     * @returns {Map}
+     * Finds the note corresponding to a y coordinate on
+     * the stave.
      */
-    createNotesMap(clef, duration) {
-        var noteNames = ['c','d','e','f','g','a','b'];
-        var noteInfo = this.getStartForClef(clef);
-
-        var notes = new Map();
-        for (let i = 18; i >= -8; i--) {
-            notes.set(i + "", {
-                clef: clef, 
-                keys: [noteNames[noteInfo.note] + "/" + noteInfo.octave], 
-                duration: duration
-            });
-
-            noteInfo.note = (noteInfo.note + 1) % noteNames.length;
-            if (noteInfo.note == 0) {
-                noteInfo.octave++;
-            }
-        }
-
-        return notes;
-    }
-
-    addNote(yCoord, clef) {
+    findNote(yCoord, clef) {
         clef = this.clef || clef;
-        let notes = this.createNotesMap(clef, this.noteDuration);
+        let notes = Note.createNotesMap(clef, this.noteDuration);
 
         let note;
         notes.forEach((lineNote, lineNum) => {
@@ -213,6 +213,14 @@ export default class StaveModel {
             }
         });
 
+        return note;
+    }
+
+
+    /**
+     * Adds a note to the pending voice in the stave
+     */
+    addNote(note) {
         if (note && this.isNewNote(note)) {
             let voice = this.voices.filter(voice => voice.pending)[0];
 
@@ -229,8 +237,6 @@ export default class StaveModel {
     /**
      * Increments the saved notes in a voice by the
      * given amount
-     * @param {} voice 
-     * @param {*} amount 
      */
     incrementSavedNotes(voice, amount) {
         if (voice.savedNotes + amount >= voice.tickables.length) {
@@ -240,12 +246,31 @@ export default class StaveModel {
         }
     }
 
+    /**
+     * Gets the last note added to the stave
+     */
     getLastNote() {
         let notes = this.voices[this.voices.length - 1].tickables;
         return notes[notes.length - 1];
     }
 
-    saveNote(finalNote) {
+    /**
+     * Pops the last pending note in the voice
+     */
+    popPendingNote() {
+        let voice = this.voices[this.voices.length - 1];
+        let notes = voice.tickables;
+        if (notes.length !== voice.savedNotes) {
+            return notes.pop();
+        }
+    }
+
+    /**
+     * Increases the number of saved notes, thereby saving
+     * the note to the stave.
+     * @returns true if the voice is full, false otherwise
+     */
+    saveNote() {
         if (this.voices.length > 0) {
             let voice = this.voices.filter(voice => voice.pending)[0];
             if (voice && !voice.full().overFull) {
@@ -263,6 +288,9 @@ export default class StaveModel {
         }
     }
 
+    /**
+     * Deletes the last note in the voice.
+     */
     deleteNote() {
         let voices = this.voices.filter(voice => voice.savedNotes !== 0);
         let voice = voices[voices.length - 1];
@@ -274,6 +302,9 @@ export default class StaveModel {
         this.needsRerender = true;
     }
 
+    /**
+     * Checks if a note is already pending in any voice.
+     */
     isNewNote(note) {
         var newNote = true;
         this.voices.forEach(voice => {
@@ -285,6 +316,9 @@ export default class StaveModel {
         return newNote;
     }
 
+    /**
+     * Addes a voice with the given note to the stave
+     */
     addVoice(note) {
         let stem = (this.voices[0]) ? VF.Stem.DOWN : VF.Stem.UP;
         this.voices.push(new Voice([note], stem, this.time));

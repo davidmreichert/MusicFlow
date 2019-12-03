@@ -105,9 +105,8 @@ export default class VexFlow extends Component {
                 if (this.currentStaveIndex.stave === this.system.length - 1) {
                     this.system.addStave();
                 }
-                
-                this.currentStave.saveNote(true);
             }
+            
             this.tone.unsync();
             this.tone.playNote(this.currentStave.getLastNote());
 
@@ -170,40 +169,47 @@ export default class VexFlow extends Component {
     }
 
     shortcuts(e) {
-        // // ignore all keyup events that are part of composition
-        // if (event.isComposing || event.keyCode === 229) {
-        //     return;
-        // }
+        let needsRerender = true;
+        let updateNote = false;
 
         if (e.key === "Backspace") {
             if (this.currentStave) {
                 this.currentStave.deleteNote();
                 this.system.removePendingNotes();
-
-                this.draw();
             }
         } else if (e.key === "ArrowUp") {
             if (this.currentStave) {
                 this.currentStave.y -= 5;
-
-                this.draw();
             }
         } else if (e.key === "ArrayDown") {
             if (this.currentStave) {
                 this.currentStave.y += 5;
-
-                this.draw();
             }
         } else if (e.key === "p") {
             this.playSystem();
+            needsRerender = false;
         } else if (e.key === "h") {
             this.currentStave.noteDuration = "2"; // Half note
+            updateNote = true;
         } else if (e.key === "q") {
             this.currentStave.noteDuration = "4";
+            updateNote = true;
         } else if (e.key == "8") {
             this.currentStave.noteDuration = "8";
+            updateNote = true;
         }
 
+        if (updateNote) {
+            let note = this.currentStave.popPendingNote();
+            if (note) {
+                note.duration = this.currentStave.noteDuration;
+                this.currentStave.addNote(note);
+            }
+        }
+
+        if (needsRerender) {
+            this.draw();
+        }
     }
 
     render() {

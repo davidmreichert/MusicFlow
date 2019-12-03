@@ -88,7 +88,7 @@ export default class Voice {
 
     addNote(note) {
         this.tickables = this.tickables.slice(0, this.savedNotes);
-        note.style = Note.DEFAULT.STYLE;
+        note.currentStyle = Note.DEFAULT.STYLE;
 
         if (note) {
             this.tickables.push(note);
