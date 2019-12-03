@@ -11,6 +11,8 @@ export default class Note {
             },
             CLEF: "treble",
             KEYS: [],
+            ACCIDENTALS: [{index: 0, value: "##"}],
+            DOTS: [0],
             DURATION: "8"
         }
     }
@@ -69,7 +71,10 @@ export default class Note {
         for (let i = 18; i >= -8; i--) {
             notes.set(i + "", new Note({
                 clef: clef, 
-                keys: [noteNames[noteInfo.note] + "/" + noteInfo.octave], 
+                keys: [{
+                    noteName: noteNames[noteInfo.note],
+                    octave: noteInfo.octave
+                }],
                 duration: duration
             }));
 
@@ -88,30 +93,139 @@ export default class Note {
 
     mergeDefaults(props) {
         this.model = {
-                clef: props.clef || Notes.DEFAULT.CLEF, 
-                keys: props.keys || Notes.DEFAULT.KEYS,
-                duration: props.duration || Notes.DEFAULT.DURATION
+                clef: props.clef || Note.DEFAULT.CLEF, 
+                keys: props.keys || Note.DEFAULT.KEYS,
+                accidentals: props.accidentals || Note.DEFAULT.ACCIDENTALS,
+                dots: props.dots || Note.DEFAULT.DOTS,
+                duration: props.duration || Note.DEFAULT.DURATION
             }
+    }
+
+    getVFNote(vfStave) {
+        let vfNote = new VF.StaveNote(this.vexModel).setStave(vfStave);
+        if (this.currentStyle) {
+            vfNote.setStyle(this.currentStyle);
+        }
+
+        if (this.dots) {
+            this.dots.forEach(dot => {
+                vfNote.addDot(dot);
+            });
+        }
+
+        if (this.accidentals) {
+            this.accidentals.forEach(accidental => {
+                vfNote.addAccidental(
+                    accidental.index, 
+                    new VF.Accidental(accidental.value)
+                );
+            });
+        }
+
+        return vfNote;
     }
 
     get clef() {
         return this.model.clef;
     }
 
-    get keys() {
-        return this.model.keys;
+    get accidentals() {
+        return this.model.accidentals;
+    }
+
+    get toneAccidentals() {
+        return this.model.accidentals.map(accidental => {
+            let value = accidental.value;
+            if (value === "##") {
+                value = "x";
+            }
+            return {
+                index: accidental.index,
+                value: value
+            }
+        });
+    }
+
+    get vexAccidentals() {
+        return this.model.accidentals.map(accidental => {
+            let value = accidental.value;
+            if (value === "x") {
+                value = "##";
+            }
+            return {
+                index: accidental.index,
+                value: value
+            }
+        });
+    }
+
+    get dots() {
+        return this.model.dots;
     }
 
     get duration() {
         return this.model.duration;
     }
 
+    get doubleDuration() {
+        let multiplier = 1;
+        if (this.dots) {
+            multiplier = 0.75
+        }
+
+        let intDur = parseInt(this.model.duration);
+        return intDur * multiplier;
+    }
+
+    get toneDurations() {
+        let durations = [];
+        this.keys.forEach((key, i) => {
+            if (this.dots.includes(i)) {
+                durations.push(this.duration + "n.");
+            } else {
+                durations.push(this.duration + "n");
+            }
+        });
+
+        return durations;
+    }
+
     get currentStyle() {
         return this.model.currentStyle;
     }
 
+    get vexModel() {
+        return {
+            clef: this.clef,
+            keys: this.keys, 
+            duration: this.duration
+        }
+    }
+
+    get keys() {
+        return this.model.keys.map((key,i) => {
+            return key.noteName + "/" + key.octave;
+        });
+    }
+
+    get tones() {
+        return this.model.keys.map((key, i) => {
+            let accidental = this.toneAccidentals.find(accidental => accidental.index === i) || {value: ""};
+
+            return key.noteName.toUpperCase() + accidental.value + key.octave;
+        })
+    }
+
     set clef(clef) {
         this.model.clef = clef;
+    }
+
+    set accidentals(accidentals) {
+        this.model.accidentals = accidentals;
+    }
+
+    set dots(dots) {
+        this.model.dots = dots;
     }
 
     set keys(keys) {
@@ -125,4 +239,6 @@ export default class Note {
     set currentStyle(currentStyle) {
         this.model.currentStyle = currentStyle;
     }
+
+
 }

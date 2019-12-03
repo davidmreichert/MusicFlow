@@ -40,11 +40,7 @@ export default class Voice {
 
             if (this.tickables && this.tickables.length) { 
                 var vfTickables = this.tickables.map(note => {
-                    let vfNote = new VF.StaveNote(note).setStave(vfStave);
-                    if (note.currentStyle) {
-                        vfNote.setStyle(note.currentStyle);
-                    }
-                    return vfNote;
+                    return note.getVFNote(vfStave);
                 });
 
                 this.vfVoice.addTickables(vfTickables);
@@ -117,8 +113,10 @@ export default class Voice {
 
         var sum = 0.0;
         this.tickables.forEach(note => {
-            sum += 1/note.duration;
+            sum += 1/note.doubleDuration;
         });
+
+        sum = parseInt(Number.parseFloat(sum).toPrecision(4));
 
         let exact = sum === (numBeats / beatValue);
         let overFull = sum > (numBeats / beatValue);

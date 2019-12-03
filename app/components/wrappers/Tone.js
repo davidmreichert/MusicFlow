@@ -37,17 +37,9 @@ export default class ToneWrapper {
         }
         
         if (note && !this.noteAlreadyAdded(note, startTime)) {
-            // Constructs tones from note
-            let tones = 
-                note.keys.map(key => {
-                    let name = key.slice(0,1).toUpperCase();
-                    let octave = key.slice(2,3);    
-                    
-                    return name + octave;
-                });
-
             // Plays the sound
-            this.synth.triggerAttackRelease(tones, note.duration + "n", startTime, ToneWrapper.DEFAULT.velocity);
+            console.log(note.toneDurations);
+            this.synth.triggerAttackRelease(note.tones, note.toneDurations, startTime, ToneWrapper.DEFAULT.velocity);
 
             // Create/update queued notes map
             if (startTime || startTime === 0) {
@@ -71,7 +63,6 @@ export default class ToneWrapper {
         if (noteList) {
             for (let i = 0, currNote; currNote = noteList[i]; i++) {
                 if (Note.compare(currNote, note)) {
-                    console.log("Hopes");
                     return true;
                 }
             }

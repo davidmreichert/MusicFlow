@@ -176,27 +176,6 @@ export default class StaveModel {
     }
 
     /**
-     * Gets start info for bass or trebel clef.
-     * returns: {
-     *      note: index of note (c == 0, b == 6)
-     *      octave: piano octave
-     *  }
-     */
-    getStartForClef(clef) {
-        if (clef === "bass") {
-            return {
-                note: 1, // d
-                octave: 1
-            };
-        } else if (clef === "treble") {
-            return {
-                note: 6, // b
-                octave: 2
-            };
-        }
-    }
-
-    /**
      * Finds the note corresponding to a y coordinate on
      * the stave.
      */
