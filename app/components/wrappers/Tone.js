@@ -1,8 +1,10 @@
-import Vex from 'vexflow';
 import Tone from 'tone';
+import Note from './Note';
 
-const VF = Vex.Flow;
-
+/**
+ * A wrapper class around the Tone.js library for translating
+ * systems and notes into sound.
+ */
 export default class ToneWrapper {
     constructor() {
         this.tone = new Tone();
@@ -11,20 +13,31 @@ export default class ToneWrapper {
                 type: 'fatsine'
             }
         }).toMaster();
+
+        this.model = {};
+    }
+
+    static get DEFAULT() {
+        return {
+            velocity: 0.05
+        }
     }
 
     /**
      * Plays a synth noise for the given notes
-     * @param notes: List of notes to sounded at the same time
+     * @param {Note} note: Note to be sounded at the given time.
+     * @param {number} startTime: The beat the note will be played on
      */
     playNote(note, startTime) {
+        // If transport still playing, stop it.
         if (Tone.Transport.state === "started") {
+            Tone.Transport.pause(0);
             Tone.Transport.cancel(0);
             Tone.Transport.stop(0);
         }
         
-        if (note) {
-            console.log(startTime);
+        if (note && !this.noteAlreadyAdded(note, startTime)) {
+            // Constructs tones from note
             let tones = 
                 note.keys.map(key => {
                     let name = key.slice(0,1).toUpperCase();
@@ -33,18 +46,49 @@ export default class ToneWrapper {
                     return name + octave;
                 });
 
-            let velocity = 0.05;
-            this.synth.triggerAttackRelease(tones, note.duration + "n", startTime, velocity);
+            // Plays the sound
+            this.synth.triggerAttackRelease(tones, note.duration + "n", startTime, ToneWrapper.DEFAULT.velocity);
+
+            // Create/update queued notes map
+            if (startTime || startTime === 0) {
+                if (this.queuedNotes.get(startTime)) {
+                    this.queuedNotes.get(startTime).push(note);
+                } else {
+                    this.queuedNotes.set(startTime, [note]);
+                }
+            }
         }
     }
 
+    /**
+     * Playing two of the same note at the same time
+     * causes issues, so this checks for that. queuedNotes
+     * is a map of start times to the list of notes that occur
+     * in those times.
+     */
+    noteAlreadyAdded(note, startTime) {
+        let noteList = this.queuedNotes.get(startTime);
+        if (noteList) {
+            for (let i = 0, currNote; currNote = noteList[i]; i++) {
+                if (Note.compare(currNote, note)) {
+                    console.log("Hopes");
+                    return true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Plays an entire system on the synth
+     * @param {System} system 
+     */
     playSystem(system) {
+        // Stop the transport and res
         Tone.Transport.cancel(0);
         Tone.Transport.stop(0);
+        this.resync();
 
-        this.synth.unsync();
-        this.synth.sync();
-        let maxTime = 0;
+        // Queues notes for each line
         system.staveLines.forEach(staveLine => {
             staveLine.forEach((stave, i)=> {
                 let staveTime = this.tone.toSeconds(i + "m"); // ith measure
@@ -53,20 +97,45 @@ export default class ToneWrapper {
                     voice.tickables.forEach(note => {
                         this.playNote(note, noteTime);
 
+                        // Updates the note time so each note sounds at the correct time
                         noteTime += this.tone.toSeconds(note.duration + "n");
-
-                        if (maxTime < noteTime) {
-                            maxTime = noteTime;
-                        }
                     });
                 })
             })
         })
 
+        // Plays the notes and clears them from queue
         Tone.Transport.start();
+        this.queuedNotes.clear();
     }
+
+    /** Methods for syncing to the transport **/
 
     unsync() {
         this.synth.unsync();
+    }
+
+    sync() {
+        this.synth.sync();
+    }
+
+    resync() {
+        this.unsync();
+        this.sync();
+    }
+
+    /**
+     * @returns {Map} A map of start times to the notes that are played then.
+     */
+    get queuedNotes() {
+        if (!this.model.queuedNotes) {
+            this.model.queuedNotes = new Map();
+        }
+
+        return this.model.queuedNotes;
+    }
+
+    set queuedNotes(queuedNotes) {
+        this.model.queuedNotes = queuedNotes;
     }
 }

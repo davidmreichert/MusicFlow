@@ -1,5 +1,5 @@
 import Vex from 'vexflow';
-import {size} from 'underscore'
+import Voice from './Voice';
 
 const VF = Vex.Flow;
 
@@ -48,7 +48,6 @@ export default class StaveModel {
             noteDuration: props.noteDuration || StaveModel.DEFAULT.NOTE_DURATION,
             voices: props.voices || StaveModel.DEFAULT.VOICES
         }
-        console.log(this.model);
     }
 
     /**
@@ -87,21 +86,8 @@ export default class StaveModel {
             this.addOptionalParameters(this.vfStave);
 
             if (this.voices && this.voices.length) {
-                var vfTickablesList = [];
                 var vfVoices = this.voices.map(voice => {
-                    var vfVoice = new VF.Voice(this.time).setMode(voice.mode);
-                    vfVoice.setStave(this.vfStave);
-
-                    if (voice.tickables && voice.tickables.length) { 
-                        var vfTickables = voice.tickables.map(note => {
-                            return new VF.StaveNote(note);
-                        });
-
-                        vfVoice.addTickables(vfTickables);
-                        vfTickablesList.push(vfTickables);
-                    }
-
-                    return vfVoice;
+                    return voice.getVFVoice(this.vfStave, this.time);
                 });
                 
                 var joinedVoices = vfVoices.filter((vfVoice, i) => this.voices[i].join);
@@ -122,24 +108,12 @@ export default class StaveModel {
 
                 this.voices.forEach( (voice, i) => {
                     if (voice.beams) {
-                        let groups = voice.beams.groups.map(fraction => {
-                            return new VF.Fraction(fraction.numerator, fraction.denominator);
-                        });
-
-                        let vfBeams = VF.Beam.applyAndGetBeams(vfVoices[i], voice.beams.direction, groups);
+                        let vfBeams = voice.getVFBeams();
                         this.drawList.push.apply(this.drawList, vfBeams);
                     }
 
                     if (voice.ties && voice.ties.length) {
-                        let vfTies = voice.ties.map(tie => {
-                            return new VF.StaveTie({
-                                first_note: vfTickablesList[i][tie.first_note],
-                                last_note: vfTickablesList[i][tie.last_note],
-                                first_indices: tie.first_indices,
-                                last_indices: tie.last_indices
-                            });
-                        })
-
+                        let vfTies = voice.getVFTies();
                         this.drawList.push.apply(this.drawList, vfTies);
                     }
                 })
@@ -199,17 +173,23 @@ export default class StaveModel {
         }
     }
 
+    /**
+     * 
+     * @param {String} clef 
+     * @param {Integer} duration 
+     * @returns {Map}
+     */
     createNotesMap(clef, duration) {
         var noteNames = ['c','d','e','f','g','a','b'];
         var noteInfo = this.getStartForClef(clef);
 
-        var notes = {};
+        var notes = new Map();
         for (let i = 18; i >= -8; i--) {
-            notes["" + i] = {
+            notes.set(i + "", {
                 clef: clef, 
                 keys: [noteNames[noteInfo.note] + "/" + noteInfo.octave], 
                 duration: duration
-            }
+            });
 
             noteInfo.note = (noteInfo.note + 1) % noteNames.length;
             if (noteInfo.note == 0) {
@@ -225,29 +205,25 @@ export default class StaveModel {
         let notes = this.createNotesMap(clef, this.noteDuration);
 
         let note;
-        Object.entries(notes).forEach(entry => {
-            let lineY = this.getYForLine(parseInt(entry[0])/2);
+        notes.forEach((lineNote, lineNum) => {
+            let lineY = this.getYForLine(parseInt(lineNum)/2);
             let inBounds = this.checkYBounds(yCoord, lineY);
             if (inBounds) {
-                note = entry[1];
+                note = lineNote;
             }
         });
 
         if (note && this.isNewNote(note)) {
             let voice = this.voices.filter(voice => voice.pending)[0];
-            this.updateVoice(voice, note);
-        }
-    }
 
-    updateVoice(voice, note) {
-        if (note) {
-            this.voices = this.voices.filter(voice => !voice.pending);
-            this.voices.push(this.addNoteToVoice(voice, note));
-        } else {
-            voice.tickables = voice.tickables.splice(0, voice.savedNotes);
+            if (!voice) {
+                this.addVoice(note);
+            } else {
+                voice.addNote(note);
+            }
+
+            this.needsRerender = true;
         }
-        
-        this.needsRerender = true;
     }
 
     /**
@@ -274,10 +250,9 @@ export default class StaveModel {
             let voice = this.voices.filter(voice => voice.pending)[0];
             if (voice) {
                 this.incrementSavedNotes(voice, 1);
-                this.updateVoice(voice);
                 this.needsRerender = true;
 
-                if (!this.voiceFull(voice)) {
+                if (!voice.full(this.time)) {
                     return false;
                 } else {
                     voice.pending = false;
@@ -291,105 +266,40 @@ export default class StaveModel {
     deleteNote() {
         let voices = this.voices.filter(voice => voice.savedNotes !== 0);
         let voice = voices[voices.length - 1];
-        if (voice && voice.savedNotes > 0) {
-            voice.pending = true;
-            voice.savedNotes--;
-            this.updateVoice(voice);
 
-            this.needsRerender = true;
-        }
-    }
-
-    voiceFull(voice) {
         if (voice) {
-            let numBeats = this.time.num_beats;
-            let beatValue = this.time.beat_value;
-
-            var sum = 0.0;
-            voice.tickables.forEach(note => {
-                sum += 1/note.duration;
-            });
-
-            return sum === (numBeats / beatValue);
+            voice.deleteNote();
         }
+
+        this.needsRerender = true;
     }
 
     isNewNote(note) {
         var newNote = true;
         this.voices.forEach(voice => {
-            if (voice.pending) {
-                voice.tickables.forEach((tickable, i) => {
-                    if (i >= voice.savedNotes && this.compareNotes(note, tickable)) {
-                        newNote = false;
-                    }
-                });
+            if (newNote) {
+                newNote = voice.isNewNote(note);
             }
         })
 
         return newNote;
     }
 
-    compareNotes(note, tickable) {
-        var clef = note.clef === tickable.clef;
-        var duration = note.duration === tickable.duration;
-        var keys = this.arraysEqual(note.keys, tickable.keys);
-
-        return clef && duration && keys;
-    }
-
-    arraysEqual(a, b) {
-        if (a === b) return true;
-        if (a == null || b == null) return false;
-        if (a.length != b.length) return false;
-      
-        for (var i = 0; i < a.length; ++i) {
-          if (a[i] !== b[i]) return false;
-        }
-        return true;
-      }
-
-    addNoteToVoice(voice, note) {
-        this.needsRerender = true;
-        if (voice) {
-            voice.tickables = voice.tickables.slice(0, voice.savedNotes);
-
-            if (note) {
-                voice.tickables.push(note);
-            }
-
-            return voice;
-        } else {
-            let stem = (this.voices[0]) ? VF.Stem.DOWN : VF.Stem.UP;
-            return this.createVoice([note], stem);
-        }
-    }
-
-    createVoice(notes, stem) {
-        return { 
-            pending: true,
-            savedNotes: 0,
-            join: true,
-            mode: VF.Voice.Mode.SOFT,
-            tickables: notes,
-            beams: {
-                direction: stem,
-                groups: [
-                    {
-                        numerator: 4,
-                        denominator: 8
-                    }
-                ]
-            }
-        }
+    addVoice(note) {
+        let stem = (this.voices[0]) ? VF.Stem.DOWN : VF.Stem.UP;
+        this.voices.push(new Voice([note], stem));
     }
 
 
-    /* Getters */
+    /***** Getters *****/
 
     get pending() {
         return this.voices.length < 2 || this.voices.find(voice => voice.pending);
     }
 
+    /**
+     * @returns {Array<Voice>}
+     */
     get voices() {
         return this.model.voices;
     }
@@ -442,7 +352,6 @@ export default class StaveModel {
 
     set voices(voices) {
         this.model.voices = voices;
-        return this;
     }
 
     set x(x) {

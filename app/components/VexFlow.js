@@ -133,7 +133,7 @@ export default class VexFlow extends Component {
         let x = (e.clientX) - this.startX;
         let y = (e.clientY) - this.startY;
 
-        console.log(`${x}, ${y}`);
+        // console.log(`${x}, ${y}`);
 
         return {
             x: x,
@@ -178,6 +178,7 @@ export default class VexFlow extends Component {
         if (e.key === "Backspace") {
             if (this.currentStave) {
                 this.currentStave.deleteNote();
+                this.system.removePendingNotes();
 
                 this.draw();
             }
