@@ -3,6 +3,14 @@ import Vex from 'vexflow';
 const VF = Vex.Flow;
 
 export default class Note {
+    static get DEFAULT() {
+        return {
+            STYLE: {
+                fillStyle: "black",
+                strokeStyle: "black"
+            }
+        }
+    }
     static compare(note, tickable) {
         var clef = note.clef === tickable.clef;
         var duration = note.duration === tickable.duration;

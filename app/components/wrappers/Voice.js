@@ -4,21 +4,31 @@ import Note from './Note';
 const VF = Vex.Flow;
 
 export default class Voice {
-    constructor(notes, stem) {
+    static get DEFAULT() {
+        return {
+            PENDING: true,
+            SAVED_NOTES: 0,
+            JOIN: true,
+            MODE: VF.Voice.Mode.SOFT,
+            GROUPS: [
+                {
+                    numerator: 4,
+                    denominator: 8
+                }
+            ]
+        }
+    }
+    constructor(notes, stem, time) {
+        this.time = time;
         this.model = {
-            pending: true,
-            savedNotes: 0,
-            join: true,
-            mode: VF.Voice.Mode.SOFT,
+            pending: Voice.DEFAULT.PENDING,
+            savedNotes: Voice.DEFAULT.SAVED_NOTES,
+            join: Voice.DEFAULT.JOIN,
+            mode: Voice.DEFAULT.MODE,
             tickables: notes,
             beams: {
                 direction: stem,
-                groups: [
-                    {
-                        numerator: 4,
-                        denominator: 8
-                    }
-                ]
+                groups: Voice.DEFAULT.GROUPS
             }
         }
     }
@@ -30,7 +40,11 @@ export default class Voice {
 
             if (this.tickables && this.tickables.length) { 
                 var vfTickables = this.tickables.map(note => {
-                    return new VF.StaveNote(note).setStave(vfStave);
+                    let vfNote = new VF.StaveNote(note).setStave(vfStave);
+                    if (note.currentStyle) {
+                        vfNote.setStyle(note.currentStyle);
+                    }
+                    return vfNote;
                 });
 
                 this.vfVoice.addTickables(vfTickables);
@@ -74,9 +88,18 @@ export default class Voice {
 
     addNote(note) {
         this.tickables = this.tickables.slice(0, this.savedNotes);
+        note.style = Note.DEFAULT.STYLE;
 
         if (note) {
             this.tickables.push(note);
+            if (this.full().overFull) {
+                this.tickables.pop();
+                note.currentStyle = {
+                    fillStyle: "red",
+                    strokeStyle: "red"
+                }
+                this.tickables.push(note);
+            }
         }
     }
 
@@ -88,16 +111,22 @@ export default class Voice {
         }
     }
 
-    full(time) {
-        let numBeats = time.num_beats;
-        let beatValue = time.beat_value;
+    full() {
+        let numBeats = this.time.num_beats;
+        let beatValue = this.time.beat_value;
 
         var sum = 0.0;
         this.tickables.forEach(note => {
             sum += 1/note.duration;
         });
 
-        return sum === (numBeats / beatValue);
+        let exact = sum === (numBeats / beatValue);
+        let overFull = sum > (numBeats / beatValue);
+
+        return {
+            exact: exact,
+            overFull: overFull
+        }
     }
 
     /**
@@ -149,6 +178,14 @@ export default class Voice {
 
     get join() {
         return this.model.join;
+    }
+
+    get currentStyle() {
+        return this.model.currentStyle;
+    }
+
+    set currentStyle(currentStyle) {
+        this.model.currentStyle = currentStyle;
     }
     
     set savedNotes(savedNotes) {

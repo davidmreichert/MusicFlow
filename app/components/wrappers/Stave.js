@@ -248,11 +248,11 @@ export default class StaveModel {
     saveNote(finalNote) {
         if (this.voices.length > 0) {
             let voice = this.voices.filter(voice => voice.pending)[0];
-            if (voice) {
+            if (voice && !voice.full().overFull) {
                 this.incrementSavedNotes(voice, 1);
                 this.needsRerender = true;
 
-                if (!voice.full(this.time)) {
+                if (!voice.full().exact) {
                     return false;
                 } else {
                     voice.pending = false;
@@ -287,7 +287,7 @@ export default class StaveModel {
 
     addVoice(note) {
         let stem = (this.voices[0]) ? VF.Stem.DOWN : VF.Stem.UP;
-        this.voices.push(new Voice([note], stem));
+        this.voices.push(new Voice([note], stem, this.time));
     }
 
 
