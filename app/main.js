@@ -6,4 +6,5 @@ import VexFlow from './components/VexFlow';
 import Toolbar from './components/Toolbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+ReactDOM.render(<Toolbar />, document.getElementById('toolbar'));
 ReactDOM.render(<VexFlow />, document.getElementById('vexflow'));
