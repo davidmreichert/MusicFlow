@@ -11,8 +11,8 @@ export default class Note {
             },
             CLEF: "treble",
             KEYS: [],
-            ACCIDENTALS: [{index: 0, value: "##"}],
-            DOTS: [0],
+            ACCIDENTALS: [],//[{index: 0, value: "##"}],
+            DOTS: [],//[0],
             DURATION: "8"
         }
     }
@@ -169,12 +169,16 @@ export default class Note {
 
     get doubleDuration() {
         let multiplier = 1;
-        if (this.dots) {
-            multiplier = 0.75
+        if (this.dots && this.dots.length) {
+            multiplier = 0.75 
         }
 
         let intDur = parseInt(this.model.duration);
         return intDur * multiplier;
+    }
+
+    get intDuration() {
+        return parseInt(this.doubleDuration);
     }
 
     get toneDurations() {
@@ -197,12 +201,16 @@ export default class Note {
     get vexModel() {
         return {
             clef: this.clef,
-            keys: this.keys, 
+            keys: this.vexKeys, 
             duration: this.duration
         }
     }
 
     get keys() {
+        return this.model.keys;
+    }
+    
+    get vexKeys() {
         return this.model.keys.map((key,i) => {
             return key.noteName + "/" + key.octave;
         });

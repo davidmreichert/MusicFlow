@@ -38,7 +38,6 @@ export default class ToneWrapper {
         
         if (note && !this.noteAlreadyAdded(note, startTime)) {
             // Plays the sound
-            console.log(note.toneDurations);
             this.synth.triggerAttackRelease(note.tones, note.toneDurations, startTime, ToneWrapper.DEFAULT.velocity);
 
             // Create/update queued notes map
@@ -89,7 +88,7 @@ export default class ToneWrapper {
                         this.playNote(note, noteTime);
 
                         // Updates the note time so each note sounds at the correct time
-                        noteTime += this.tone.toSeconds(note.duration + "n");
+                        noteTime += this.tone.toSeconds(note.intDuration + "n");
                     });
                 })
             })

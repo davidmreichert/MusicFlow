@@ -92,7 +92,7 @@ export default class StaveModel {
 
             if (this.voices && this.voices.length) {
                 var vfVoices = this.voices.map(voice => {
-                    return voice.getVFVoice(this.vfStave, this.time);
+                    return voice.getVFVoice(this.vfStave);
                 });
                 
                 var joinedVoices = vfVoices.filter((vfVoice, i) => this.voices[i].join);

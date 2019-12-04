@@ -197,6 +197,10 @@ export default class VexFlow extends Component {
         } else if (e.key == "8") {
             this.currentStave.noteDuration = "8";
             updateNote = true;
+        } else if (e.key == "c") {
+            this.system = new SystemModel();
+            this.currentStave = undefined;
+            this.currentStaveIndex = undefined;
         }
 
         if (updateNote) {
