@@ -1,0 +1,45 @@
+.menu-bar {
+  background-color: white;
+  width: 100%;
+  display: flex;
+  height: 36px;
+  justify-content: flex-start;
+  position: fixed;
+  background-color: rgba(200, 200, 200, 1);
+  z-index: 999;
+}
+
+.dropdown-item .dropdown {
+  font-size: 12px;
+  color: rgb(110, 110, 110);
+  line-height: 34px;
+  height: 34px;
+  padding: 0 0px;
+  cursor: default;
+}
+
+.dropdown-item.btn.btn-primary {
+  font-size: 14px;
+  color: black;
+  line-height: 34px;
+  height: 34px;
+
+  &:hover {
+    border-left: 1px solid rgb(124, 115, 179);
+    border-right: 1px solid rgb(124, 115, 179);
+    border-top: 1px solid rgb(124, 115, 179);
+    border-bottom: 1px solid rgb(124, 115, 179);
+  }
+}
+
+.dropdown-item:focus, .dropdown-item:active:focus, .dropdown-item.active:focus,
+.dropdown-item.focus, .dropdown-item:active.focus, .dropdown-item.active.focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.dropdown-item.btn.btn-primary:focus, .dropdown-item.btn.btn-primary:active:focus, .dropdown-item.btn.btn-primary.active:focus,
+.dropdown-item.btn.btn-primary.focus, .dropdown-item.btn.btn-primary:active.focus, .dropdown-item.btn.btn-primary.active.focus {
+  outline: none;
+  box-shadow: none;
+}

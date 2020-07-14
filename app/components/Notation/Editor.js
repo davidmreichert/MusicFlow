@@ -1,25 +1,62 @@
 import Vex from 'vexflow';
 import React, {Component} from 'react';
 import SystemModel from './wrappers/System';
-import ToneWrapper from './wrappers/Tone.js';
+import ToneWrapper from './wrappers/Tone';
+import MenuBar from "../Toolbar/MenuBar";
+import Toolbox from "../Toolbar/Toolbar";
 
 const VF = Vex.Flow;
 
-export default class VexFlow extends Component {
+const defaultColor = "black";
+const defaultTool = "Pencil";
+
+import pencil from "../../images/pencil.svg";
+import line from "../../images/line.svg";
+import brush from "../../images/brush.svg";
+import fill from "../../images/fill.svg";
+import rectangle from "../../images/rectangle.svg";
+import text from "../../images/text.svg";
+import circle from "../../images/circle.svg";
+import erase from "../../images/erase.svg";
+import picker from "../../images/picker.svg";
+
+const toolbarItems = [
+  { name: "Pencil", image: pencil },
+  { name: "Line", image: line },
+  { name: "Brush", image: brush },
+  { name: "Fill", image: fill },
+  { name: "Text", image: text },
+  { name: "Rectangle", image: rectangle },
+  { name: "Circle", image: circle },
+  { name: "Erase", image: erase },
+  { name: "Picker", image: picker }
+];
+
+
+export default class Editor extends Component {
     constructor(props) {
         super(props);
 
         this.setDefaultState();   
 
         this.tone = new ToneWrapper();
+
+        this.state = {
+            color: defaultColor,
+            selectedItem: defaultTool,
+            toolbarItems: toolbarItems
+        };
+
+        this.changeColor = this.changeColor.bind(this);
+        this.changeTool = this.changeTool.bind(this);
     }
 
     get APP_NAME() {
-        return "VexEdit";
+        return "editor";
     }
 
     get DIV_NAME() {
-        return "system";
+        return "staves";
     }
 
     setDefaultState() {
@@ -30,6 +67,15 @@ export default class VexFlow extends Component {
         this.tone.playSystem(this.system);
     }
 
+
+    changeColor(event) {
+        this.setState({ color: event.target.style.backgroundColor });
+    }
+    
+    changeTool(event, tool) {
+        this.setState({ selectedItem: tool });
+    }
+    
     getContext(div) {
         let context = VF.Renderer.lastContext;
         if (!context) {
@@ -218,10 +264,18 @@ export default class VexFlow extends Component {
 
     render() {
         return (
-            <div id={ this.APP_NAME }>
-                <div id={ this.DIV_NAME } />
-                <button type="button" className="btn btn-dark" onClick={this.playSystem.bind(this)}>Play</button>
-            </div>
+            <React.Fragment>
+                <MenuBar />
+                <div id={ this.APP_NAME}>
+                    <Toolbox
+                        items={this.state.toolbarItems}
+                        activeItem={this.state.selectedItem}
+                        handleClick={this.changeTool}
+                        color={this.state.color}
+                    />
+                    <div id={ this.DIV_NAME } />
+                </div>
+            </ React.Fragment>
         );
     }
 

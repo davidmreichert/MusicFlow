@@ -144,7 +144,7 @@ export default class Voice {
      */
     createTies() {
         if (!this.pending) {
-            console.log(this.full());
+            //console.log(this.full());
 
             let numBeats = this.time.num_beats;
             let beatValue = this.time.beat_value;
