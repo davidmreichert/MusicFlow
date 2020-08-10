@@ -11,10 +11,39 @@ module.exports = {
                 test: /\.js$/,
                 exclude: /node_modules/
             },
-            {
-                test: /\.css$/,
-                use: ['style-loader', 'css-loader']
-            } 
+              {
+                test: /\.html$/,
+                use: [
+                  {
+                    loader: "html-loader",
+                    options: { minimize: true }
+                  }
+                ]
+              },
+              {
+                test: /\.s?css$/,
+                use: [
+                  {
+                    loader: "vue-style-loader"
+                  },
+                  {
+                    loader: "css-loader",
+                    options: {
+                      sourceMap: true
+                    }
+                  },
+                  {
+                    loader: "sass-loader",
+                    options: {
+                      sourceMap: true
+                    }
+                  }
+                ]
+              },
+              {
+                test: /\.svg$/,
+                loader: "svg-inline-loader"
+              }
         ]
     },
     devServer: {

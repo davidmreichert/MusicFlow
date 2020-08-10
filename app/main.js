@@ -2,7 +2,9 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import VexFlow from './components/VexFlow';
+import Editor from './components/Notation/Editor';
+import styles from "./styles/styles.scss";
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-ReactDOM.render(<VexFlow />, document.getElementById('vexflow'));
+ReactDOM.render(<Editor />, document.getElementById('vexflow'));
